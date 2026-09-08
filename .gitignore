@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media
+
+# Variáveis de ambiente (NUNCA suba isso)
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+backend_db
+
+# Docker
+.docker/
+
+# IDEs
+.vscode/
+.idea/
+
+# Coverage (Testes)
+.coverage
+htmlcov/
+coverage.xml
+
+# Static
+staticfiles/
+```
+# Cache files
+tmp/
+
