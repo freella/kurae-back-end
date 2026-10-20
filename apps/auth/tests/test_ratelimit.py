@@ -2,6 +2,7 @@ from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.test import override_settings
+from unittest.mock import patch
 
 from django.core.cache import cache
 
@@ -12,6 +13,10 @@ class RateLimitTest(APITestCase):
     Testa a funcionalidade de Rate Limiting nos endpoints públicos.
     """
     def setUp(self):
+      # Evita que as requisições cruzem a janela de rate limit alinhada ao relógio.
+      window_patch = patch("django_ratelimit.core._get_window", return_value=0)
+      window_patch.start()
+      self.addCleanup(window_patch.stop)
       cache.clear() # Limpa o cache antes de cada teste para resetar o contador de rate limit
       # get_ratelimit_rate agora retornará "10/m" porque TESTING é False para esta classe de teste
 

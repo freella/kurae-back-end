@@ -166,6 +166,16 @@ Executar:
 
 docker compose exec web python manage.py test
 
+## Integração contínua
+
+O workflow `.github/workflows/ci.yml` executa automaticamente em pushes para `main`
+e em Pull Requests. Ele instala as dependências, verifica migrations pendentes com
+`makemigrations --check --dry-run` e executa a suíte completa com `manage.py test`.
+
+Na CI, os testes usam SQLite em memória, sem depender do PostgreSQL ou de credenciais
+reais. O job tem limite de execução de 5 minutos; o cache de dependências reduz o
+tempo de instalações seguintes.
+
 ---
 
 # 📦 Padrões de Desenvolvimento
@@ -198,7 +208,8 @@ O objetivo é evoluir este template para um backend robusto e pronto para produ�
 - [ ] **Testes de Integração:** Expandir a cobertura de testes para fluxos completos.
 
 ## Médio/Longo Prazo
-- [ ] **CI/CD:** Configurar GitHub Actions para rodar testes e linter automaticamente.
+- [x] **CI:** GitHub Actions executa os testes e verifica migrations em pushes para `main` e Pull Requests.
+- [ ] **Linter:** Configurar verificação automática de estilo e qualidade do código.
 - [ ] **Deploy:** Configurar arquivos para produção (Gunicorn, Nginx).
 - [ ] **Monitoramento:** Adicionar logs estruturados e Sentry.
 
