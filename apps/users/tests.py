@@ -1,9 +1,34 @@
 from rest_framework.test import APITestCase
 from django.urls import reverse
+from django.test import SimpleTestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 
+from apps.users.serializers import UserProfileSerializer
+
 User = get_user_model()
+
+
+class UserProfileSerializerUnitTest(SimpleTestCase):
+    def test_somente_nome_e_sobrenome_entram_nos_dados_validados(self):
+        serializer = UserProfileSerializer(
+            instance=User(),
+            data={
+                "first_name": "Ana",
+                "last_name": "Costa",
+                "email": "outro@teste.com",
+                "role": "ADMIN",
+                "is_staff": True,
+                "password": "OutraSenha@123",
+            },
+            partial=True,
+        )
+
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(
+            dict(serializer.validated_data),
+            {"first_name": "Ana", "last_name": "Costa"},
+        )
 
 
 class UserProfileGetTest(APITestCase):
