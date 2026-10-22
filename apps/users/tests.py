@@ -70,6 +70,33 @@ class UserProfilePatchTest(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["last_name"], "Costa")
 
+    def test_sem_token_retorna_401(self):
+        self.client.credentials()
+        response = self.client.patch(self.url, {"first_name": "Ana"}, format="json")
+        self.assertEqual(response.status_code, 401)
+
+    def test_ignora_campos_protegidos_e_atualiza_nome(self):
+        response = self.client.patch(
+            self.url,
+            {
+                "first_name": "Ana",
+                "is_staff": True,
+                "is_active": False,
+                "is_superuser": True,
+                "password": "OutraSenha@123",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, "Ana")
+        self.assertFalse(self.user.is_staff)
+        self.assertTrue(self.user.is_active)
+        self.assertFalse(self.user.is_superuser)
+        self.assertTrue(self.user.check_password("Senha@123"))
+        for field in ("is_staff", "is_active", "is_superuser", "password"):
+            self.assertNotIn(field, response.data)
+
     def test_nao_pode_alterar_email(self):
         response = self.client.patch(
             self.url, {"email": "novo@email.com"}, format="json"

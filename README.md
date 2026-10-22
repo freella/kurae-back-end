@@ -166,6 +166,18 @@ Executar:
 
 docker compose exec web python manage.py test
 
+## Perfil do usuário
+
+Os endpoints `GET /api/users/me/` e `PATCH /api/users/me/` exigem um token JWT de
+usuário autenticado; contas guest não têm acesso. O GET retorna `id`, `email`,
+`first_name`, `last_name` e `role`.
+
+O PATCH permite alterar somente `first_name` e `last_name`. Campos como `email`,
+`role`, `is_staff`, `is_active` e `password` são ignorados; não aparecem na
+resposta como campos editáveis. A senha tem um fluxo separado de recuperação.
+O modelo de usuário não possui `date_joined` e o projeto ainda não oferece
+verificação de e-mail, por isso a troca de e-mail não faz parte deste endpoint.
+
 ## Integração contínua
 
 O workflow `.github/workflows/ci.yml` executa automaticamente em pushes para `main`
@@ -204,7 +216,7 @@ O objetivo é evoluir este template para um backend robusto e pronto para produ�
 ## Próximos Passos (Curto Prazo)
 - [ ] **Documentação Automática:** Integrar Swagger/OpenAPI (drf-spectacular) para visualizar os endpoints.
 - [ ] **Recuperação de Senha:** Implementar fluxo de "Esqueci minha senha" com envio de e-mail.
-- [ ] **Perfil de Usuário:** Criar endpoints para o usuário atualizar seus próprios dados (nome, foto, etc).
+- [x] **Perfil de Usuário:** Consultar o perfil e atualizar nome e sobrenome via `/api/users/me/`.
 - [ ] **Testes de Integração:** Expandir a cobertura de testes para fluxos completos.
 
 ## Médio/Longo Prazo

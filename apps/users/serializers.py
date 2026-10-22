@@ -7,7 +7,8 @@ User = get_user_model()
 class UserProfileSerializer(serializers.ModelSerializer):
     """
     Serializer para leitura e atualização do perfil do usuário autenticado.
-    Expõe campos básicos — estender conforme necessidade do projeto.
+    Apenas first_name e last_name podem ser alterados pelo próprio usuário.
+    E-mail e papel são somente leitura; os demais campos não são expostos.
     """
 
     class Meta:
