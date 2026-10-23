@@ -217,3 +217,8 @@ O objetivo é evoluir este template para um backend robusto e pronto para produ�
 
 > **Nota:** Este projeto está em evolução constante. Sinta-se livre para contribuir ou sugerir melhorias via Issues.
 ---
+
+## Licença e segurança
+
+Este repositório é público para viabilizar o deploy da Kurae. Consulte [LICENSE](LICENSE),
+[SECURITY.md](SECURITY.md) e o [plano de segurança e visibilidade](docs/seguranca-e-visibilidade.md).
