@@ -143,7 +143,10 @@ Motivo:
 
 Copiar o exemplo:
 
-cp .env.example .env
+cp .env.exemple .env
+
+Troque `SECRET_KEY` e `DB_PASSWORD` por valores locais antes de subir os containers. O Compose
+falha se `DB_PASSWORD` não estiver definido e publica o PostgreSQL somente em `127.0.0.1`.
 
 ## 2. Subir containers
 
@@ -217,3 +220,10 @@ O objetivo é evoluir este template para um backend robusto e pronto para produ�
 
 > **Nota:** Este projeto está em evolução constante. Sinta-se livre para contribuir ou sugerir melhorias via Issues.
 ---
+
+## Licença, segurança e visibilidade
+
+Este repositório é público para permitir o deploy. Código, histórico, branches, pull requests e
+logs de CI podem ser vistos por qualquer pessoa. Não versione credenciais, dados pessoais ou
+informações comerciais internas. Consulte [LICENSE](LICENSE), [SECURITY.md](SECURITY.md) e o
+[plano de segurança e visibilidade](docs/seguranca-e-visibilidade.md).
