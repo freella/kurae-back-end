@@ -162,3 +162,12 @@ STATIC_URL = 'static/'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@example.com')
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
+
+# Formulário de contato / Leads (antispam, LGPD e HubSpot — apenas no servidor)
+LEAD_RATELIMIT_RATE = config('LEAD_RATELIMIT_RATE', default='5/m')
+LEAD_PRIVACY_CONSENT_REQUIRED = config('LEAD_PRIVACY_CONSENT_REQUIRED', default=True, cast=bool)
+TURNSTILE_SECRET_KEY = config('TURNSTILE_SECRET_KEY', default='')
+HUBSPOT_ACCESS_TOKEN = config('HUBSPOT_ACCESS_TOKEN', default='')
+HUBSPOT_PORTAL_ID = config('HUBSPOT_PORTAL_ID', default='')
+HUBSPOT_FORM_GUID = config('HUBSPOT_FORM_GUID', default='')
+
