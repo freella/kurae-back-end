@@ -1,4 +1,5 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+from urllib import error as urllib_error
 
 from django.core.cache import cache
 from django.test import override_settings
@@ -7,6 +8,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.leads.models import Lead
+from apps.leads.services import HubSpotUnavailableError, LeadService
 
 
 class LeadCreateTest(APITestCase):
@@ -101,6 +103,39 @@ class LeadCreateTest(APITestCase):
     def test_get_nao_permitido(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    @patch('apps.leads.services.LeadService.sync_to_hubspot', side_effect=HubSpotUnavailableError('down'))
+    def test_hubspot_indisponivel_retorna_503(self, _mock_sync):
+        response = self.client.post(self.url, self.valid_payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertIn('temporariamente indisponível', response.data.get('error', ''))
+
+    @override_settings(HUBSPOT_ACCESS_TOKEN='test-token', HUBSPOT_PORTAL_ID='', HUBSPOT_FORM_GUID='')
+    @patch('apps.leads.services.urllib_request.urlopen')
+    def test_hubspot_409_faz_patch_sem_duplicar(self, mock_urlopen):
+        conflict = urllib_error.HTTPError(
+            url='https://api.hubapi.com/crm/v3/objects/contacts',
+            code=409,
+            msg='Conflict',
+            hdrs=None,
+            fp=None,
+        )
+        patch_resp = MagicMock()
+        patch_resp.__enter__.return_value.status = 200
+        mock_urlopen.side_effect = [conflict, patch_resp]
+
+        lead = Lead.objects.create(
+            name='João Silva',
+            email='joao@teste.com',
+            message='Mensagem de atualização para contato existente.',
+            privacy_accepted=True,
+        )
+        synced = LeadService.sync_to_hubspot(lead)
+        self.assertTrue(synced)
+        self.assertEqual(mock_urlopen.call_count, 2)
+        second_req = mock_urlopen.call_args_list[1].args[0]
+        self.assertEqual(second_req.get_method(), 'PATCH')
+        self.assertIn('idProperty=email', second_req.full_url)
 
 
 @override_settings(TESTING=False, LEAD_RATELIMIT_RATE='5/m')

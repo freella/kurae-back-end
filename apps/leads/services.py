@@ -13,6 +13,10 @@ TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverif
 HUBSPOT_CONTACTS_URL = 'https://api.hubapi.com/crm/v3/objects/contacts'
 
 
+class HubSpotUnavailableError(Exception):
+    """Lançada quando a integração com o HubSpot está configurada, mas indisponível."""
+
+
 class LeadService:
     """
     Serviço com regras de negócio para o domínio de leads:
@@ -69,12 +73,12 @@ class LeadService:
             return LeadService._submit_hubspot_form(lead, portal_id, form_guid)
 
         if access_token:
-            return LeadService._create_hubspot_contact(lead, access_token)
+            return LeadService._upsert_hubspot_contact(lead, access_token)
 
         return False
 
     @staticmethod
-    def _create_hubspot_contact(lead: Lead, access_token: str) -> bool:
+    def _upsert_hubspot_contact(lead: Lead, access_token: str) -> bool:
         parts = lead.name.strip().split(' ', 1)
         firstname = parts[0]
         lastname = parts[1] if len(parts) > 1 else ''
@@ -88,21 +92,46 @@ class LeadService:
         if lead.phone:
             properties['phone'] = lead.phone
 
-        req = urllib_request.Request(
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json',
+        }
+        body = json.dumps({'properties': properties}).encode('utf-8')
+
+        create_req = urllib_request.Request(
             HUBSPOT_CONTACTS_URL,
-            data=json.dumps({'properties': properties}).encode('utf-8'),
-            headers={
-                'Authorization': f'Bearer {access_token}',
-                'Content-Type': 'application/json',
-            },
+            data=body,
+            headers=headers,
             method='POST',
         )
         try:
-            with urllib_request.urlopen(req, timeout=5) as resp:
+            with urllib_request.urlopen(create_req, timeout=5) as resp:
+                return 200 <= resp.status < 300
+        except urllib_error.HTTPError as exc:
+            if exc.code == 409:
+                return LeadService._update_hubspot_contact_by_email(lead.email, body, headers)
+            logger.error('Erro HTTP ao sincronizar lead %s com HubSpot CRM: %s', lead.id, exc.code)
+            raise HubSpotUnavailableError('HubSpot indisponível no momento.') from exc
+        except (urllib_error.URLError, TimeoutError) as exc:
+            logger.error('Erro de rede ao sincronizar lead %s com HubSpot CRM: %s', lead.id, exc.__class__.__name__)
+            raise HubSpotUnavailableError('HubSpot indisponível no momento.') from exc
+
+    @staticmethod
+    def _update_hubspot_contact_by_email(email: str, body: bytes, headers: dict) -> bool:
+        encoded_email = urllib_parse.quote(email, safe='')
+        update_url = f'{HUBSPOT_CONTACTS_URL}/{encoded_email}?idProperty=email'
+        patch_req = urllib_request.Request(
+            update_url,
+            data=body,
+            headers=headers,
+            method='PATCH',
+        )
+        try:
+            with urllib_request.urlopen(patch_req, timeout=5) as resp:
                 return 200 <= resp.status < 300
         except (urllib_error.URLError, TimeoutError) as exc:
-            logger.error('Erro ao sincronizar lead %s com HubSpot CRM: %s', lead.id, exc.__class__.__name__)
-            return False
+            logger.error('Erro ao atualizar contato existente no HubSpot CRM: %s', exc.__class__.__name__)
+            raise HubSpotUnavailableError('HubSpot indisponível no momento.') from exc
 
     @staticmethod
     def _submit_hubspot_form(lead: Lead, portal_id: str, form_guid: str) -> bool:
@@ -129,7 +158,7 @@ class LeadService:
                 return 200 <= resp.status < 300
         except (urllib_error.URLError, TimeoutError) as exc:
             logger.error('Erro ao enviar lead %s para HubSpot Forms: %s', lead.id, exc.__class__.__name__)
-            return False
+            raise HubSpotUnavailableError('HubSpot indisponível no momento.') from exc
 
     @staticmethod
     def create_lead(validated_data: dict) -> Lead:

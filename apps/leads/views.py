@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .serializers import LeadSerializer
-from .services import LeadService
+from .services import HubSpotUnavailableError, LeadService
 
 
 def get_leads_ratelimit_rate(group=None, request=None):
@@ -74,5 +74,14 @@ class LeadCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        LeadService.create_lead(serializer.validated_data)
+        try:
+            LeadService.create_lead(serializer.validated_data)
+        except HubSpotUnavailableError:
+            return Response(
+                {
+                    'error': 'Nosso serviço de atendimento está temporariamente indisponível. Tente novamente em instantes.',
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
         return Response({'message': 'Lead registrado com sucesso'}, status=status.HTTP_201_CREATED)
